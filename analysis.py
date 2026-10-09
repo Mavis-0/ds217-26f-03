@@ -32,9 +32,43 @@ def main():
     print(f"Loaded {readings.shape[0]} patients x {readings.shape[1]} hours")
 
     # TODO: answer each question in the README's summary table with NumPy.
-
     # TODO: write one "key: value" line per answer to output/vitals_summary.txt.
+    patient_means = readings.mean(axis=1)
+    hour_means = readings.mean(axis=0)
 
+    patient_index = patient_means.argmax()
+    hour_index = hour_means.argmax()
+
+    monitor_names = sorted(set(monitors))
+    monitor_means = np.array([
+        patient_means[monitors == name].mean()
+        for name in monitor_names
+    ])
+    monitor_index = monitor_means.argmax()
+    high_monitor = monitor_names[monitor_index]
+    high_mask = monitors == high_monitor
+    other_patient_means = patient_means[~high_mask]
+
+    answers = {
+        "patients": len(patient_ids),
+        "readings": readings.size,
+        "mean_sbp": readings.mean(),
+        "sd_sbp": readings.std(),
+        "min_sbp": readings.min(),
+        "max_sbp": readings.max(),
+        "stage2_patients": np.count_nonzero(patient_means >= 140),
+        "highest_patient": patient_ids[patient_index],
+        "highest_patient_mean": patient_means[patient_index],
+        "peak_hour_column": hour_columns[hour_index],
+        "peak_hour_mean": hour_means[hour_index],
+        "high_monitor": high_monitor,
+        "monitor_offset": monitor_means[monitor_index] - other_patient_means.mean(),
+        "stage2_other_monitors": np.count_nonzero(other_patient_means >= 140),
+    }
+
+    with open("output/vitals_summary.txt", "w", encoding="utf-8") as file:
+        for key, value in answers.items():
+            file.write(f"{key}: {value}\n")
 
 if __name__ == "__main__":
     main()
